@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>天机阁 | AI 紫微斗数系统 v3.3 (Lunar Fix)</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/iztro@2.0.5/dist/iztro.min.js"></script>
+
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.9);
+            --glass-shadow: 0 10px 40px -10px rgba(139, 92, 246, 0.15);
+            --accent-purple: #7c3aed;
+            --text-primary: #1e293b; 
+        }
+
+        body {
+            background-color: #f8fafc;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e0e7ff 100%);
+            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        .fade-in { animation: fadeIn 0.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        input, select, textarea {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .icon-svg { width: 1.2em; height: 1.2em; fill: currentColor; display: inline-block; vertical-align: middle; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4); }
+        
+        .btn-council {
+            background: linear-gradient(135deg, #be123c 0%, #9f1239 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(190, 18, 60, 0.25);
+        }
+        .btn-council:hover { filter: brightness(1.1); }
+
+        .prose strong { color: var(--accent-purple); font-weight: 700; }
+        .prose p { margin-bottom: 0.8em; line-height: 1.6; }
+    </style>
+</head>
+<body class="p-4 md:p-8 flex flex-col items-center">
+
+    <!-- Header -->
+    <header class="w-full max-w-7xl mb-8 flex justify-between items-center fade-in">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-purple-200">
+                <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight text-slate-800">天机阁 <span class="font-light text-purple-600">Tianji Pavilion</span></h1>
+                <p class="text-xs text-slate-500 font-medium tracking-wide">AI ASTROLABE CONSULTANT v3.3</p>
+            </div>
+        </div>
+        <div class="hidden md:block">
+            <span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-3 py-1.5 rounded-full border border-slate-200">
+                Gemini 2.5 Pro · Iztro Core
+            </span>
+        </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left: Settings & Chart -->
+        <section class="lg:col-span-4 flex flex-col gap-6 fade-in" style="animation-delay: 0.1s;">
+            
+            <!-- API Key -->
+            <div class="glass-panel rounded-2xl p-5">
+                <label class="block text-[10px] font-bold uppercase text-slate-400 mb-2 tracking-wider">Access Token</label>
+                <div class="relative group">
+                    <input type="password" id="apiKeyInput" placeholder="Enter Gemini API Key (sk-...)" 
+                        class="w-full rounded-xl px-4 py-3 text-xs font-mono bg-white focus:bg-purple-50 pl-10">
+                    <div class="absolute left-3.5 top-3.5 text-slate-400">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 11-7.778 7.778 5.5 5.5 0 017.778-7.778zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 排盘 Form -->
+            <div class="glass-panel rounded-2xl p-6 space-y-5">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-700 text-sm flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                        </svg>
+                        定盘参数
+                    </h3>
+                </div>
+                
+                <!-- 历法切换 -->
+                <div class="flex p-1 bg-slate-100 rounded-xl">
+                    <label class="flex-1 text-center cursor-pointer relative">
+                        <input type="radio" name="calendarType" value="solar" checked class="hidden peer">
+                        <span class="block py-2 text-xs font-semibold rounded-lg text-slate-500 peer-checked:bg-white peer-checked:text-purple-700 peer-checked:shadow-sm transition-all z-10 relative">阳历 Solar</span>
+                    </label>
+                    <label class="flex-1 text-center cursor-pointer relative">
+                        <input type="radio" name="calendarType" value="lunar" class="hidden peer">
+                        <span class="block py-2 text-xs font-semibold rounded-lg text-slate-500 peer-checked:bg-white peer-checked:text-purple-700 peer-checked:shadow-sm transition-all z-10 relative">农历 Lunar</span>
+                    </label>
+                </div>
+
+                <!-- 闰月 (仅在农历显示) -->
+                <div id="leapMonthContainer" class="hidden">
+                    <label class="flex items-center p-3 rounded-xl border border-yellow-200 bg-yellow-50 cursor-pointer hover:bg-yellow-100 transition-colors">
+                        <input type="checkbox" id="isLeapInput" class="accent-yellow-600 w-4 h-4 rounded-sm">
+                        <span class="ml-2 text-xs font-bold text-yellow-700">此月为闰月 (Leap Month)</span>
+                    </label>
+                </div>
+
+                <!-- 核心输入区域 -->
+                <div class="space-y-3">
+                    
+                    <!-- 【阳历输入控件】 -->
+                    <div id="solarInputGroup">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">SOLAR DATE</label>
+                        <input type="date" id="dateInput" class="w-full rounded-xl px-4 py-3 text-sm font-medium text-slate-700">
+                    </div>
+
+                    <!-- 【农历输入控件】 (默认隐藏) -->
+                    <div id="lunarInputGroup" class="hidden">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">LUNAR DATE</label>
+                        <div class="grid grid-cols-3 gap-2">
+                            <select id="lunarYearInput" class="w-full rounded-xl px-2 py-3 text-xs font-medium bg-white text-center appearance-none">
+                                <!-- JS Populated -->
+                            </select>
+                            <select id="lunarMonthInput" class="w-full rounded-xl px-2 py-3 text-xs font-medium bg-white text-center appearance-none">
+                                <!-- JS Populated -->
+                            </select>
+                            <select id="lunarDayInput" class="w-full rounded-xl px-2 py-3 text-xs font-medium bg-white text-center appearance-none">
+                                <!-- JS Populated -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="relative">
+                            <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">HOUR</label>
+                            <select id="hourInput" class="w-full rounded-xl px-3 py-3 text-xs font-medium appearance-none bg-white">
+                                <option value="0">子 (23-01)</option>
+                                <option value="1">丑 (01-03)</option>
+                                <option value="2">寅 (03-05)</option>
+                                <option value="3">卯 (05-07)</option>
+                                <option value="4">辰 (07-09)</option>
+                                <option value="5">巳 (09-11)</option>
+                                <option value="6">午 (11-13)</option>
+                                <option value="7">未 (13-15)</option>
+                                <option value="8">申 (15-17)</option>
+                                <option value="9">酉 (17-19)</option>
+                                <option value="10">戌 (19-21)</option>
+                                <option value="11">亥 (21-23)</option>
+                            </select>
+                            <div class="absolute right-3 top-9 text-slate-400 pointer-events-none">
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            </div>
+                        </div>
+                        <div class="relative">
+                            <label class="block text-[10px] font-bold text-slate-400 mb-1 ml-1">GENDER</label>
+                            <select id="genderInput" class="w-full rounded-xl px-3 py-3 text-xs font-medium appearance-none bg-white">
+                                <option value="1">乾造 (男)</option>
+                                <option value="0">坤造 (女)</option>
+                            </select>
+                            <div class="absolute right-3 top-9 text-slate-400 pointer-events-none">
+                                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="generateBtn" class="btn-primary w-full py-3.5 px-4 rounded-xl font-bold text-sm tracking-wide transition-all active:scale-[0.98] flex justify-center items-center">
+                    <svg class="w-4 h-4 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><path d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/>
+                    </svg>
+                    排 布 命 盘
+                </button>
+            </div>
+
+            <!-- 简盘预览 -->
+            <div id="chartPreview" class="glass-panel rounded-2xl p-6 flex-1 min-h-[200px] text-sm hidden flex-col">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Astrolabe Data</span>
+                    <span id="fiveElement" class="px-2 py-1 bg-purple-100 text-purple-700 rounded-md text-[10px] font-bold"></span>
+                </div>
+                <div id="basicInfo" class="space-y-3 text-slate-600 text-xs overflow-y-auto pr-2 h-full">
+                    <!-- JS Injected -->
+                </div>
+            </div>
+        </section>
+
+        <!-- Right: AI Interaction -->
+        <section class="lg:col-span-8 flex flex-col h-[88vh] fade-in relative" style="animation-delay: 0.2s;">
+            
+            <!-- Master Selector -->
+            <div class="glass-panel rounded-2xl p-2 mb-6 flex items-center justify-between shadow-sm">
+                <div class="flex gap-2 overflow-x-auto p-1" id="masterList">
+                    <!-- Masters Injected Here -->
+                </div>
+                <div class="w-[1px] h-8 bg-slate-200 mx-3"></div>
+                <button id="councilBtn" class="btn-council text-xs font-bold px-5 py-3 rounded-xl whitespace-nowrap flex items-center gap-2 transition-all">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                    <span>开启会审</span>
+                </button>
+            </div>
+
+            <!-- Chat Area -->
+            <div class="glass-panel rounded-2xl flex-1 flex flex-col relative overflow-hidden bg-white/40">
+                <div id="chatContainer" class="flex-1 overflow-y-auto p-6 md:p-8 space-y-8 scroll-smooth">
+                    <div class="flex flex-col items-center justify-center h-full text-slate-400 opacity-80">
+                        <div class="w-20 h-20 rounded-3xl bg-white shadow-lg flex items-center justify-center mb-6">
+                            <svg class="w-8 h-8 text-purple-200" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><path d="M12 2a5 5 0 0 1 5 5 5 5 0 0 1-5 5v0a5 5 0 0 0-5 5 5 5 0 0 0 5 5"/>
+                            </svg>
+                        </div>
+                        <p class="text-sm font-medium">输入生辰，静待天机。</p>
+                    </div>
+                </div>
+
+                <!-- Council Overlay -->
+                <div id="councilOverlay" class="absolute inset-0 bg-white/90 z-50 hidden flex-col items-center justify-center text-center backdrop-blur-md">
+                    <div class="relative mb-8">
+                        <div class="w-24 h-24 rounded-full border-4 border-purple-100 flex items-center justify-center animate-spin" style="animation-duration: 3s;"></div>
+                        <svg class="w-10 h-10 text-purple-600 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </div>
+                    <h2 id="councilStatus" class="text-2xl font-bold text-slate-800 tracking-widest mb-2">召集宗师</h2>
+                    <p class="text-xs font-mono text-purple-500 uppercase tracking-widest">Processing Logic</p>
+                </div>
+
+                <!-- Input -->
+                <div class="p-5 bg-white border-t border-slate-100">
+                    <div class="relative shadow-sm">
+                        <textarea id="chatInput" rows="1" placeholder="在此处向大师提问..." 
+                            class="w-full bg-slate-50 border-0 rounded-xl pl-5 pr-14 py-4 text-sm resize-none focus:ring-2 focus:ring-purple-100 focus:bg-white transition-all text-slate-700 font-medium"></textarea>
+                        
+                        <button id="sendBtn" class="absolute right-2 bottom-2 w-10 h-10 bg-purple-600 hover:bg-purple-700 rounded-lg flex items-center justify-center text-white transition-all shadow-md active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="text-[10px] text-center text-slate-400 mt-3">
+                        AI 内容仅供娱乐参考 · 请勿迷信
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const ICONS = {
+            scroll: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`,
+            diagram: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+            fire: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>`,
+            heart: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>`,
+            robot: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/></svg>`,
+            gavel: `<svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>`,
+            spinner: `<svg class="animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>`,
+            send: `<svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></svg>`
+        };
+
+        const MASTERS = [
+            { id: 'sanhe', name: '清虚道长', desc: '三合派 | 古典宗师', icon: 'scroll', color: 'text-blue-600', bg: 'bg-blue-50', prompt: `### [SYSTEM ROLE DEFINITION]\n你是【清虚道长】，三合派宗师。\n### [COGNITIVE FRAMEWORK]\n1. 定宫位强弱：先观命身，次观三方四正。\n2. 辨星情庙旺。\n3. 审格局成败。\n### [LINGUISTIC STYLE]\n半文半白，引经据典（必须引用古诀）。\n### [CRITICAL]\nStrictly rely on provided chart data.` },
+            { id: 'sihua', name: '玄机子', desc: '飞星派 | 逻辑推演', icon: 'diagram', color: 'text-emerald-600', bg: 'bg-emerald-50', prompt: `### [SYSTEM ROLE DEFINITION]\n你是【玄机子】，飞星派专家。\n### [COGNITIVE FRAMEWORK]\n1. 生年四化（禄忌因果）。\n2. 宫干自化。\n3. 冲照理论（必须指出忌冲之宫）。\n### [LINGUISTIC STYLE]\n逻辑严密，符号化表达 (A -> B)。\n### [CRITICAL]\nStrictly rely on provided chart data.` },
+            { id: 'mangpai', name: '铁口刘', desc: '盲派 | 江湖铁断', icon: 'fire', color: 'text-red-600', bg: 'bg-red-50', prompt: `### [SYSTEM ROLE DEFINITION]\n你是【铁口刘】，盲派江湖客。\n### [COGNITIVE FRAMEWORK]\n1. 找煞星（羊陀火铃劫空）。\n2. 断灾厄、破财。\n3. 忽略细枝末节，直击要害。\n### [LINGUISTIC STYLE]\n大白话，肯定句，情绪化。\n### [CRITICAL]\nOnly mention stars that actually exist in data.` },
+            { id: 'modern', name: 'Alice林', desc: '心理学 | 治愈成长', icon: 'heart', color: 'text-pink-600', bg: 'bg-pink-50', prompt: `### [SYSTEM ROLE DEFINITION]\n你是【Alice林】，心理占星师。\n### [COGNITIVE FRAMEWORK]\n1. 命宫=人格面具。\n2. 煞星=阴影(Shadow)。\n3. 化忌=成长点。\n### [LINGUISTIC STYLE]\n温柔知性，心理学术语。\n### [CRITICAL]\nStrictly rely on provided chart data.` }
+        ];
+
+        const state = {
+            apiKey: '', userProfile: null, chartData: null, currentMaster: 'sanhe',
+            chatHistories: { sanhe: [], sihua: [], mangpai: [], modern: [], council: [] },
+            isGenerating: false
+        };
+
+        function processIztroData(astrolabe) {
+            try {
+                if (!astrolabe || !astrolabe.palaces) throw new Error("排盘结果为空");
+                const baseInfo = {
+                    gender: astrolabe.gender || '-', fiveElement: astrolabe.fiveElementClass || '-',
+                    soul: astrolabe.soul || '-', body: astrolabe.body || '-', chineseDate: (astrolabe.lunarDate || '').toString()
+                };
+                const palaces = astrolabe.palaces.map(p => {
+                    const majorStars = p.majorStars || [];
+                    const minorStars = p.minorStars || [];
+                    const adjectiveStars = p.adjectiveStars || [];
+                    const extraStars = [];
+                    if (p.changsheng12) extraStars.push(p.changsheng12);
+                    if (p.boshi12) extraStars.push(p.boshi12);
+                    if (p.suijian12) extraStars.push(p.suijian12);
+                    if (p.jiangqian12) extraStars.push(p.jiangqian12);
+                    const majors = majorStars.map(s => `${s.name}(${s.brightness}${s.mutagen ? '·'+s.mutagen : ''})`);
+                    const allMinors = [...minorStars.map(s=>s.name), ...adjectiveStars.map(s=>s.name), ...extraStars];
+                    const uniqueMinors = [...new Set(allMinors)];
+                    return {
+                        name: p.name, earthlyBranch: p.earthlyBranch, heavenlyStem: p.heavenlyStem,
+                        majorStr: majors.join(', ') || '【空宫】', minorStr: uniqueMinors.join(', ') || '无',
+                        decadal: p.decadal ? `${p.decadal.range[0]}-${p.decadal.range[1]}` : '??-??'
+                    };
+                });
+                return { baseInfo, palaces };
+            } catch (e) { console.error(e); throw new Error("数据清洗失败: " + e.message); }
+        }
+
+        function serializeChartForAI(chartData) {
+            if (!chartData) return "";
+            let text = `【全息命盘数据 Full Data】\nInfo: ${chartData.baseInfo.gender}, ${chartData.baseInfo.fiveElement}, ${chartData.baseInfo.chineseDate}\n`;
+            chartData.palaces.forEach(p => { text += `[${p.earthlyBranch}宫](${p.heavenlyStem}) ${p.name}: 主星{${p.majorStr}} | 辅星{${p.minorStr}} | 大限${p.decadal}\n`; });
+            return text;
+        }
+
+        function generateChart() {
+            const hourIndex = parseInt(document.getElementById('hourInput').value);
+            const genderVal = parseInt(document.getElementById('genderInput').value);
+            const genderStr = genderVal === 1 ? '男' : '女';
+            const calType = document.querySelector('input[name="calendarType"]:checked').value;
+            const isLeap = document.getElementById('isLeapInput').checked;
+
+            try {
+                let astrolabe;
+                // 农历/阳历 分支逻辑修正
+                if (calType === 'solar') {
+                    const dateStr = document.getElementById('dateInput').value;
+                    if (!dateStr) { alert("请选择阳历日期"); return; }
+                    astrolabe = iztro.astro.bySolar(dateStr, hourIndex, genderStr, true, 'zh-CN');
+                    state.userProfile = `阳历 ${dateStr}`;
+                } else {
+                    // 获取农历下拉框的值
+                    const yy = parseInt(document.getElementById('lunarYearInput').value);
+                    const mm = parseInt(document.getElementById('lunarMonthInput').value);
+                    const dd = parseInt(document.getElementById('lunarDayInput').value);
+                    astrolabe = iztro.astro.byLunar(yy, mm, dd, hourIndex, genderStr, isLeap, 'zh-CN');
+                    state.userProfile = `农历 ${yy}年${mm}月${dd}日`;
+                }
+
+                if (!astrolabe) throw new Error("Iztro 引擎未返回数据");
+                state.chartData = processIztroData(astrolabe);
+                
+                updateChartUI(state.chartData);
+                state.chatHistories = { sanhe: [], sihua: [], mangpai: [], modern: [], council: [] };
+                renderHistory();
+                addSystemMessage("排盘成功。全星系数据已加载，请选择宗师咨询。");
+            } catch (e) {
+                console.error(e);
+                addSystemMessage("排盘错误: " + e.message, true);
+            }
+        }
+
+        function updateChartUI(data) {
+            const preview = document.getElementById('chartPreview');
+            const list = document.getElementById('basicInfo');
+            const fiveEl = document.getElementById('fiveElement');
+            preview.classList.remove('hidden'); preview.classList.add('flex');
+            fiveEl.textContent = data.baseInfo.fiveElement;
+            let html = '';
+            const critical = ['命宫', '身宫', '财帛', '官禄', '迁移'];
+            data.palaces.filter(p => critical.includes(p.name)).forEach(p => {
+                const isMing = p.name === '命宫';
+                const bgClass = isMing ? 'bg-purple-50 border-purple-200' : 'bg-white border-slate-100';
+                html += `<div class="p-3 rounded-xl border ${bgClass} mb-2 shadow-sm"><div class="flex justify-between items-center mb-1"><span class="${isMing ? 'text-purple-700' : 'text-slate-700'} font-bold">${p.name}</span><span class="text-[10px] text-slate-400 font-mono">${p.heavenlyStem}${p.earthlyBranch}</span></div><div class="text-slate-800 text-xs font-semibold">${p.majorStr}</div><div class="text-slate-500 text-[10px] mt-1 truncate">${p.minorStr}</div></div>`;
+            });
+            list.innerHTML = html;
+        }
+
+        async function callGemini(fullPrompt, isCouncil = false) {
+            const apiKey = document.getElementById('apiKeyInput').value || state.apiKey;
+            if (!apiKey) { addSystemMessage("请先输入 API Key", true); return; }
+            state.isGenerating = true; updateSendBtnState();
+
+            let systemInstructionText = "";
+            const chartText = serializeChartForAI(state.chartData);
+            if (isCouncil) {
+                systemInstructionText = `### Role: Pavilion Master\nHost a debate based on User Question.\nMembers: Qingxu(Traditional), Xuanji(Logical), Tiekou(Direct).\nChart: ${chartText}\nUser Question: "${fullPrompt}"\nFormat:\n🧘 **清虚**:...\n📐 **玄机**:...\n🔥 **铁口**:...\n📜 **阁主总结**: [Max 100 words, concise & insightful]`;
+            } else {
+                const master = MASTERS.find(m => m.id === state.currentMaster);
+                systemInstructionText = `${master.prompt}\n\nChart:\n${chartText}`;
+            }
+
+            const targetKey = isCouncil ? 'council' : state.currentMaster;
+            const currentHistory = state.chatHistories[targetKey];
+            const contents = currentHistory.map(msg => ({ role: msg.role, parts: [{ text: msg.parts[0].text }] }));
+            contents.push({ role: 'user', parts: [{ text: fullPrompt }] });
+
+            try {
+                const model = "gemini-2.5-flash-preview-09-2025"; 
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+                const response = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: systemInstructionText }] } }) });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+                const aiText = data.candidates[0].content.parts[0].text;
+                state.chatHistories[targetKey].push({ role: 'user', parts: [{ text: fullPrompt }] });
+                state.chatHistories[targetKey].push({ role: 'model', parts: [{ text: aiText }] });
+                renderMessage(aiText, 'model', isCouncil ? 'council' : state.currentMaster);
+            } catch (e) { renderMessage(`Connection Error: ${e.message}`, 'system', null, true); } 
+            finally { state.isGenerating = false; updateSendBtnState(); }
+        }
+
+        function initMasters() {
+            document.getElementById('masterList').innerHTML = MASTERS.map(m => `
+                <div class="cursor-pointer group flex flex-col items-center min-w-[80px] p-2 rounded-2xl transition-all ${m.id === state.currentMaster ? 'bg-white shadow-sm' : 'hover:bg-white/50'}" onclick="selectMaster('${m.id}')">
+                    <div class="w-10 h-10 rounded-xl ${m.bg} ${m.color} flex items-center justify-center mb-1.5 shadow-sm transition-all group-hover:scale-105">${ICONS[m.icon]}</div>
+                    <span class="text-[10px] font-bold ${m.id === state.currentMaster ? 'text-slate-800' : 'text-slate-400'}">${m.name}</span>
+                </div>`).join('');
+        }
+
+        function selectMaster(id) { state.currentMaster = id; initMasters(); renderHistory(); }
+
+        function renderHistory() {
+            const container = document.getElementById('chatContainer');
+            container.innerHTML = '';
+            if (!state.chartData) {
+                container.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-slate-400 opacity-80"><div class="w-20 h-20 rounded-3xl bg-white shadow-lg flex items-center justify-center mb-6">${ICONS.scroll}</div><p class="text-sm font-medium">输入生辰，静待天机。</p></div>`; return;
+            }
+            const history = state.chatHistories[state.currentMaster];
+            if (history.length === 0) { const m = MASTERS.find(x => x.id === state.currentMaster); addSystemMessage(`已连线: ${m.name}`); }
+            else { history.forEach(msg => renderMessage(msg.parts[0].text, msg.role, msg.role === 'model' ? state.currentMaster : null)); }
+        }
+
+        function renderMessage(text, role, masterId = null, isError = false) {
+            const container = document.getElementById('chatContainer');
+            const div = document.createElement('div');
+            if (role === 'user') { div.className = "flex justify-end fade-in"; div.innerHTML = `<div class="bg-purple-600 text-white px-5 py-3.5 rounded-2xl rounded-tr-sm max-w-[85%] text-sm shadow-lg shadow-purple-200 leading-relaxed font-medium">${text}</div>`; }
+            else if (role === 'system') { div.className = "flex justify-center my-6 fade-in"; div.innerHTML = `<div class="flex items-center gap-2 px-4 py-1.5 rounded-full border ${isError ? 'border-red-200 bg-red-50 text-red-600' : 'border-purple-200 bg-purple-50 text-purple-600'}"><span class="text-[10px] font-bold tracking-wide">${text}</span></div>`; }
+            else {
+                let masterInfo = { name: 'AI', icon: 'robot', color: 'text-slate-400', bg: 'bg-slate-100' };
+                if (masterId === 'council') { masterInfo = { name: '天机会审', icon: 'gavel', color: 'text-white', bg: 'bg-gradient-to-br from-red-500 to-pink-600' }; }
+                else if (masterId) { const m = MASTERS.find(x => x.id === masterId); if (m) masterInfo = m; }
+                div.className = "flex justify-start gap-4 fade-in w-full";
+                const mdHtml = marked.parse(text);
+                div.innerHTML = `<div class="flex-shrink-0 w-10 h-10 rounded-xl ${masterInfo.bg} ${masterInfo.color} flex items-center justify-center mt-1 shadow-sm border border-white">${ICONS[masterInfo.icon]}</div><div class="flex flex-col max-w-[90%]"><span class="text-[10px] font-bold text-slate-400 mb-1 ml-1 uppercase tracking-wider">${masterInfo.name}</span><div class="bg-white text-slate-700 px-6 py-5 rounded-2xl rounded-tl-sm border border-slate-100 text-sm prose prose-sm max-w-none shadow-sm">${mdHtml}</div></div>`;
+            }
+            container.appendChild(div); setTimeout(() => { container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' }); }, 100);
+        }
+
+        function addSystemMessage(msg, isError=false) { renderMessage(msg, 'system', null, isError); }
+
+        async function handleSend() {
+            if (state.isGenerating) return;
+            if (!state.chartData) { addSystemMessage("请先在左侧输入生辰并排盘", true); return; }
+            const input = document.getElementById('chatInput'); const text = input.value.trim();
+            if (!text) return; input.value = ''; renderMessage(text, 'user'); await callGemini(text, false);
+        }
+
+        async function triggerCouncil() {
+            if (!state.chartData) { addSystemMessage("请先排盘", true); return; }
+            if (state.isGenerating) return;
+            const currentHist = state.chatHistories[state.currentMaster];
+            const lastUserMsg = [...currentHist].reverse().find(m => m.role === 'user');
+            const inputVal = document.getElementById('chatInput').value.trim();
+            let topic = "";
+            if (inputVal) { topic = inputVal; document.getElementById('chatInput').value = ''; renderMessage(`(发起会审) ${topic}`, 'user'); }
+            else if (lastUserMsg) { topic = lastUserMsg.parts[0].text; addSystemMessage(`正在就议题 "<b>${topic}</b>" 召集会审...`); }
+            else { alert("请先与大师对话，或在输入框中输入问题，再开启会审。"); return; }
+            const overlay = document.getElementById('councilOverlay'); const status = document.getElementById('councilStatus');
+            overlay.classList.remove('hidden'); overlay.classList.add('flex');
+            const steps = ["读取命盘...", "连接宗师...", "辩论推演...", "阁主定夺..."];
+            for (const step of steps) { status.innerText = step; await new Promise(r => setTimeout(r, 600)); }
+            overlay.classList.add('hidden'); overlay.classList.remove('flex'); await callGemini(topic, true);
+        }
+
+        function updateSendBtnState() {
+            const btn = document.getElementById('sendBtn');
+            if (state.isGenerating) { btn.innerHTML = ICONS.spinner; btn.disabled = true; btn.classList.add('opacity-50'); }
+            else { btn.innerHTML = ICONS.send; btn.disabled = false; btn.classList.remove('opacity-50'); }
+        }
+
+        function populateLunarDropdowns() {
+            // Populate Years (1924 - 2044)
+            const yearSel = document.getElementById('lunarYearInput');
+            for(let y=1924; y<=2044; y++) {
+                const opt = document.createElement('option'); opt.value = y; opt.text = y + "年"; 
+                if(y === 2000) opt.selected = true; 
+                yearSel.add(opt);
+            }
+            // Populate Months (正月 - 腊月)
+            const monSel = document.getElementById('lunarMonthInput');
+            const monNames = ["正月","二月","三月","四月","五月","六月","七月","八月","九月","十月","冬月","腊月"];
+            monNames.forEach((n, i) => {
+                const opt = document.createElement('option'); opt.value = i+1; opt.text = n; 
+                monSel.add(opt);
+            });
+            // Populate Days (初一 - 三十)
+            const daySel = document.getElementById('lunarDayInput');
+            const prefix = ["初","十","廿","三"];
+            for(let d=1; d<=30; d++) {
+                let name = "";
+                if(d <= 10) name = "初" + (d===10?"十": "一二三四五六七八九".charAt(d-1));
+                else if(d < 20) name = "十" + "一二三四五六七八九".charAt(d-11);
+                else if(d === 20) name = "二十";
+                else if(d < 30) name = "廿" + "一二三四五六七八九".charAt(d-21);
+                else name = "三十";
+                const opt = document.createElement('option'); opt.value = d; opt.text = name; 
+                daySel.add(opt);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initMasters();
+            document.getElementById('dateInput').valueAsDate = new Date();
+            populateLunarDropdowns(); // 初始化农历下拉框
+            
+            const ta = document.getElementById('chatInput');
+            ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } });
+
+            document.getElementById('generateBtn').addEventListener('click', generateChart);
+            document.getElementById('sendBtn').addEventListener('click', handleSend);
+            document.getElementById('councilBtn').addEventListener('click', triggerCouncil);
+
+            // Toggle Calendar Type UI
+            const radios = document.querySelectorAll('input[name="calendarType"]');
+            radios.forEach(r => r.addEventListener('change', (e) => {
+                const isLunar = e.target.value === 'lunar';
+                document.getElementById('leapMonthContainer').style.display = isLunar ? 'block' : 'none';
+                document.getElementById('solarInputGroup').style.display = isLunar ? 'none' : 'block';
+                document.getElementById('lunarInputGroup').style.display = isLunar ? 'block' : 'none';
+            }));
+        });
+    </script>
+</body>
+</html>
